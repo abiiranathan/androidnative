@@ -70,9 +70,9 @@ signing and Play Store preparation, see **[CUSTOMIZING.md](CUSTOMIZING.md)**.
 | `env.sh`                                  | Shared shell configuration. Reads versions from `gradle.properties`, puts SDK tools on `PATH`, detects a JDK. Safe to source from your profile. |
 | `gradle.properties`                       | **Single source of truth** for SDK/NDK/CMake versions, ABIs, app identity, and Gradle settings.                                                 |
 | `settings.gradle.kts`, `build.gradle.kts` | Gradle project and plugin configuration.                                                                                                        |
-| `gradle/libs.versions.toml`               | Version catalog (AGP, Kotlin plugin, test libraries). Add dependencies here.                                                                    |
+| `gradle/libs.versions.toml`               | Version catalog (AGP, Kotlin, AndroidX, Compose and test libraries). Add dependencies here.                                                      |
 | `gradlew`, `gradle/wrapper/`              | Pinned Gradle 9.8.2 wrapper. Commit these.                                                                                                     |
-| `app/build.gradle.kts`                    | App module: namespace, SDK levels, ABIs, CMake hookup, test dependencies, Eclipse/clangd integration.                                           |
+| `app/build.gradle.kts`                    | App module: namespace, SDK levels, Compose, ABIs, CMake hookup, test dependencies, Eclipse/clangd integration.                                   |
 | `app/src/main/java/`                      | Java + Kotlin sources: `MainActivity`, the `NativeGreeting` JNI facade, `KotlinSmoke`.                                                           |
 | `app/src/test/java/`                      | JVM unit tests (Kotlin `KotlinSmokeTest`); run with `make unit-test`.                                                                           |
 | `app/src/main/cpp/`                       | `core.[ch]` (portable C, no JNI), `jni_bridge.c`, `CMakeLists.txt`.                                                                             |
@@ -170,8 +170,8 @@ use `arm64-v8a`; an x86_64 emulator uses the other.
 `gradle.properties` is authoritative:
 
 ```properties
-android.compileSdk=34
-android.targetSdk=34
+android.compileSdk=35
+android.targetSdk=35
 android.minSdk=24
 android.buildToolsVersion=36.0.0
 android.ndkVersion=27.0.12077973

@@ -6,6 +6,7 @@ import org.gradle.plugins.ide.eclipse.model.SourceFolder
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
     eclipse
 }
 
@@ -22,7 +23,7 @@ fun configString(property: String, fallback: String): String =
     providers.gradleProperty(property)
         .getOrElse(fallback)
 
-val sdkCompile: Int = configInt("android.compileSdk", 34)
+val sdkCompile: Int = configInt("android.compileSdk", 35)
 val sdkTarget: Int = configInt("android.targetSdk", sdkCompile)
 val sdkMin: Int = configInt("android.minSdk", 24)
 val androidSdkDirectory = androidComponents.sdkComponents.sdkDirectory
@@ -79,12 +80,23 @@ android {
 
     buildFeatures {
         buildConfig = true
+        compose = true
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     lint {
         // abiFilters is built from gradle.properties, which Lint cannot
         // evaluate; x86_64 is included, so this is a false positive.
         disable += "ChromeOsAbiSupport"
+    }
+}
+
+androidComponents {
+    beforeVariants(selector().withBuildType("release")) { 
+        variant: com.android.build.api.variant.HasUnitTestBuilder -> variant.enableUnitTest = true
     }
 }
 
@@ -148,6 +160,16 @@ afterEvaluate {
 }
 
 dependencies {
+    implementation(libs.androidx.core)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+
+    debugImplementation(libs.androidx.compose.ui.tooling)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)

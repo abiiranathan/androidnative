@@ -196,7 +196,7 @@ This downloads the Android command-line tools into `$ANDROID_HOME` (default
 `~/Android/Sdk`), accepts the SDK licences, and installs:
 
 - `platform-tools` (includes `adb`)
-- `platforms;android-34`
+- `platforms;android-35`
 - `build-tools;36.0.0`
 - `ndk;27.0.12077973`
 - `cmake;3.22.1`
@@ -226,10 +226,10 @@ ANDROID_HOME=/opt/android-sdk ./bootstrap.sh
 ./bootstrap.sh --emulator --avd
 ```
 
-`--avd` creates (or reuses) an x86_64 AVD named `android-dev-34`. Start it with:
+`--avd` creates (or reuses) an x86_64 AVD named `android-dev-35`. Start it with:
 
 ```sh
-"$ANDROID_HOME/emulator/emulator" -avd android-dev-34 &
+"$ANDROID_HOME/emulator/emulator" -avd android-dev-35 &
 adb wait-for-device
 ```
 

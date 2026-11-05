@@ -81,8 +81,8 @@ Android Studio; this project does not require it.
 Almost all version numbers live in **`gradle.properties`**:
 
 ```properties
-android.compileSdk=34
-android.targetSdk=34
+android.compileSdk=35
+android.targetSdk=35
 android.minSdk=24
 android.buildToolsVersion=36.0.0
 android.ndkVersion=27.0.12077973
@@ -143,7 +143,7 @@ and Gradle as described in section 7.
 
 Google Play raises its required `targetSdk` every year. Since **August 31,
 2026**, new apps and app updates must target **Android 16 (API level 36)** or
-higher. This template pins `targetSdk=34`, so **bump it before publishing**.
+higher. This template pins `targetSdk=35`, so **bump it before publishing**.
 
 Check the current rule in the
 [Play target API guide](https://developer.android.com/google/play/requirements/target-sdk)
@@ -208,9 +208,11 @@ dependencyResolutionManagement {
    make apk
    ```
 
-Use `implementation` for normal libraries. Use `api` in a library module only
-when the dependency is part of your public API; this project is an application,
-so `implementation` is usually right.
+The project already has Jetpack Compose enabled, with AndroidX Core, Activity
+Compose, the Compose BOM, UI, and Material 3 in the version catalog. Add
+additional Compose libraries there and use `implementation` in this block.
+Use `api` in a library module only when the dependency is part of your public
+API; this project is an application, so `implementation` is usually right.
 
 ### Dependency hosted only in a GitHub repository (JitPack)
 

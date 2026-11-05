@@ -28,7 +28,7 @@ _android_dev_prop() {
 # ---------------------------------------------------------------------------
 # Versions (gradle.properties is authoritative)
 # ---------------------------------------------------------------------------
-API_LEVEL="$(_android_dev_prop android.compileSdk 34)"                  # compileSdk
+API_LEVEL="$(_android_dev_prop android.compileSdk 35)"                  # compileSdk
 TARGET_API="$(_android_dev_prop android.targetSdk "$API_LEVEL")"        # targetSdk
 MIN_API="$(_android_dev_prop android.minSdk 24)"                        # minSdk
 BUILD_TOOLS_VERSION="$(_android_dev_prop android.buildToolsVersion 36.0.0)"
