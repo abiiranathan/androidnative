@@ -1,0 +1,42 @@
+# Gradle / Android build outputs
+/build/
+/app/build/
+/app/.cxx/
+/.gradle/
+/.kotlin/
+/.externalNativeBuild/
+/captures/
+/out/
+local.properties
+*.iml
+.idea/
+*.iws
+*.ipr
+
+# Signing material (the shared debug keystore lives in ~/.android)
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+keystore.properties
+signing.properties
+
+# Packaging / profiling artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+*.hprof
+
+# Local archives, logs and environment files
+androidnative.tar.gz
+*.log
+.env
+.env.*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
