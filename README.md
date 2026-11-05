@@ -59,6 +59,9 @@ make dist
 The archive contains only source and build files: no `.git`, build outputs,
 `local.properties`, APKs or signing material.
 
+For a file-by-file guide to branding, SDK/API updates, dependencies, release
+signing and Play Store preparation, see **[CUSTOMIZING.md](CUSTOMIZING.md)**.
+
 ## Layout
 
 | Path | Purpose |
@@ -78,6 +81,7 @@ The archive contains only source and build files: no `.git`, build outputs,
 | `scripts/` | `env-run`, `doctor`, wrapper generation, device check, `local.properties`. |
 | `Makefile` | Developer entry points (see `make help`). |
 | `QUICKSTART.md` | Clean-machine walkthrough, from prerequisites to a running app. |
+| `CUSTOMIZING.md` | File-by-file guide: app identity, SDK/API updates, dependencies, signing and Play Store. |
 | `scripts/new-project.sh` | Renames the template for a new app and package. |
 | `scripts/package-template.sh` | Creates a clean, shareable source archive (`make dist`). |
 
@@ -94,6 +98,7 @@ Run `make help` for the full list.
 | `make apk` | Debug APK via Gradle. |
 | `make apk-raw` | Debug APK without Gradle (offline/no-wrapper fallback). |
 | `make release` | Release APK, signed with the local debug key. |
+| `make bundle` | Release App Bundle (`.aab`) for Play; configure release signing first. |
 | `make dist` | Clean source archive in `dist/`, with SHA-256 checksum. |
 | `make install` | Install the debug APK with `adb install -r`. |
 | `make install-raw` | Install the Gradle-free APK (builds it if missing). |

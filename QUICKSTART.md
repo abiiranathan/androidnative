@@ -5,7 +5,7 @@ running on a phone or emulator. It assumes no Android Studio and no pre-existing
 Android SDK.
 
 If you only want to build the existing checkout, skip to
-[Bootstrap the toolchain](#3-bootstrap-the-toolchain).
+[Bootstrap the toolchain](#4-bootstrap-the-toolchain).
 
 ## What this project is
 
@@ -20,6 +20,10 @@ A minimal Android app with a C library behind JNI:
 
 Nothing here requires Android Studio. Android Studio can open the project later
 if you want it.
+
+> Ready to make it your own? **[CUSTOMIZING.md](CUSTOMIZING.md)** explains which
+> files to edit for app identity, SDK/API versions, dependencies, signing and
+> Play Store uploads.
 
 ## 1. Prerequisites
 
@@ -271,12 +275,14 @@ Useful variants:
 ```sh
 make apk-raw      # same app without Gradle, using SDK tools only
 make release      # release variant, signed with the local debug key
+make bundle       # release App Bundle for Play (configure signing first)
 make lint         # report: app/build/reports/lint-results-debug.html
 make check        # host tests + debug APK
 ```
 
 `make release` is for local verification. Its signing key is the shared Android
-debug keystore; configure a real keystore before publishing to a store.
+debug keystore; configure a real upload key before publishing to a store. See
+[Signing the APK or App Bundle](CUSTOMIZING.md#5-signing-the-apk-or-app-bundle).
 
 The debug APK contains `arm64-v8a` and `x86_64` native libraries. Most phones
 use the first; x86_64 emulators use the second.

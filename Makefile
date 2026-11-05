@@ -18,7 +18,7 @@ APK_DEBUG   := $(ROOT)/app/build/outputs/apk/debug/app-debug.apk
 GRADLE_OPTS ?= --console=plain
 
 .PHONY: help bootstrap doctor wrapper wrapper-force local-properties \
-        test test-sanitize apk apk-raw release install install-raw run run-raw \
+        test test-sanitize apk apk-raw release bundle install install-raw run run-raw \
         log devices require-device connected-test uninstall clean dist distclean \
         check lint all
 
@@ -80,6 +80,11 @@ apk-raw: ## Build the debug APK without Gradle (SDK command-line tools only)
 release: local-properties $(GRADLE) ## Build a release APK (signed with the debug key locally)
 	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:assembleRelease
 	@echo "APK: $(ROOT)/app/build/outputs/apk/release/app-release.apk"
+
+bundle: local-properties $(GRADLE) ## Build a release App Bundle for Play (AAB)
+	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:bundleRelease
+	@echo "AAB: $(ROOT)/app/build/outputs/bundle/release/app-release.aab"
+	@echo "Configure release signing before uploading to Play; see CUSTOMIZING.md."
 
 require-device: ## Fail unless an adb device is attached
 	@"$(ROOT)/scripts/require-device.sh"
