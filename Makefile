@@ -6,21 +6,35 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
+# Several targets rely on prerequisite order (e.g. `install: require-device
+# apk`), which `make -j` does not guarantee. Gradle parallelises internally, so
+# serialising make itself costs nothing.
+.NOTPARALLEL:
+
 ROOT        := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 ENV_RUN     := $(ROOT)/scripts/env-run.sh
 GRADLE      := $(ROOT)/gradlew
 CC          ?= cc
+# libFuzzer needs LLVM clang. Apple's clang does not ship it: on macOS use
+# Homebrew's, e.g. `make fuzz CLANG=$(brew --prefix llvm)/bin/clang`.
+CLANG       ?= clang
+FUZZ_TIME   ?= 30
 APP_ID      := $(shell sed -n 's/^android\.applicationId=//p' "$(ROOT)/gradle.properties" | tail -n 1)
 ifeq ($(strip $(APP_ID)),)
 APP_ID      := com.example.nativeapp
 endif
 APK_DEBUG   := $(ROOT)/app/build/outputs/apk/debug/app-debug.apk
-GRADLE_OPTS ?= --console=plain
 
-.PHONY: help bootstrap doctor wrapper wrapper-force local-properties \
-        test test-sanitize unit-test apk apk-raw release bundle install install-raw run run-raw \
-        log devices require-device connected-test uninstall clean dist distclean \
-        check lint all
+# Arguments passed to Gradle. Deliberately NOT called GRADLE_OPTS: gradlew
+# reads that environment variable as *JVM* options, and make exports variables
+# set in the environment or on its command line to every recipe, so a value
+# like `--console=plain` would crash the wrapper's JVM at start-up.
+GRADLE_ARGS ?= --console=plain
+
+.PHONY: help bootstrap doctor wrapper wrapper-force wrapper-checksum local-properties \
+		test test-sanitize unit-test apk apk-raw release bundle install install-raw run run-raw \
+		log devices require-device connected-test uninstall clean dist distclean \
+		check check-symbols check-docs fuzz lint all
 
 help: ## Show this help
 	@echo "Targets:"
@@ -48,6 +62,9 @@ wrapper: ## Generate gradlew (one-time; needs a system Gradle)
 wrapper-force: ## Regenerate gradlew even if it already exists
 	@"$(ROOT)/scripts/generate-wrapper.sh" --force
 
+wrapper-checksum: ## Pin the Gradle distribution SHA-256 in the wrapper properties
+	@"$(ROOT)/scripts/pin-wrapper-checksum.sh"
+
 local-properties: ## Create local.properties from ANDROID_HOME when missing
 	@"$(ROOT)/scripts/ensure-local-properties.sh"
 
@@ -68,27 +85,49 @@ test-sanitize: ## Run host tests with ASan + UBSan
 		-o "$(ROOT)/build/host/test_core_sanitize"
 	@"$(ROOT)/build/host/test_core_sanitize"
 
+fuzz: ## Fuzz the C core with libFuzzer for FUZZ_TIME seconds (needs LLVM clang)
+	@mkdir -p "$(ROOT)/build/host/fuzz-corpus"
+	@"$(ENV_RUN)" $(CLANG) -std=c11 -O1 -g -Wall -Wextra -Werror \
+		-fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer \
+		-I"$(ROOT)/app/src/main/cpp" \
+		"$(ROOT)/tests/fuzz_core.c" "$(ROOT)/app/src/main/cpp/core.c" \
+		-o "$(ROOT)/build/host/fuzz_core"
+	@"$(ROOT)/build/host/fuzz_core" -max_total_time=$(FUZZ_TIME) \
+		-artifact_prefix="$(ROOT)/build/host/" "$(ROOT)/build/host/fuzz-corpus"
+
+check-symbols: ## Fail if the raw-build .so exports anything but JNI entry points
+	@"$(ROOT)/build.sh" symbols
+
+check-docs: ## Fail if version numbers in the docs drift from gradle.properties
+	@"$(ROOT)/scripts/check-docs.sh"
+
 unit-test: local-properties $(GRADLE) ## Run JVM/Kotlin unit tests
-	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:testDebugUnitTest
+	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_ARGS) :app:testDebugUnitTest
 
 $(GRADLE):
 	@"$(ROOT)/scripts/generate-wrapper.sh"
 
 apk: local-properties $(GRADLE) ## Build the debug APK with Gradle
-	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:assembleDebug
+	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_ARGS) :app:assembleDebug
 	@echo "APK: $(APK_DEBUG)"
 
 apk-raw: ## Build the debug APK without Gradle (SDK command-line tools only)
 	@"$(ROOT)/build.sh" build
 
 release: local-properties $(GRADLE) ## Build a release APK (signed with the debug key locally)
-	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:assembleRelease
+	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_ARGS) :app:assembleRelease
 	@echo "APK: $(ROOT)/app/build/outputs/apk/release/app-release.apk"
 
-bundle: local-properties $(GRADLE) ## Build a release App Bundle for Play (AAB)
-	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:bundleRelease
+# Unlike `release`, a Play bundle must never fall back to the shared debug key
+# (see the signingConfig fallback in CUSTOMIZING.md), so refuse to build one
+# when no upload key is configured.
+bundle: local-properties $(GRADLE) ## Build a release App Bundle for Play (needs keystore.properties)
+	@test -f "$(ROOT)/keystore.properties" || { \
+		echo "error: keystore.properties not found; refusing to build a Play bundle" >&2; \
+		echo "       that would be signed with the debug key. See CUSTOMIZING.md section 5." >&2; \
+		exit 1; }
+	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_ARGS) :app:bundleRelease
 	@echo "AAB: $(ROOT)/app/build/outputs/bundle/release/app-release.aab"
-	@echo "Configure release signing before uploading to Play; see CUSTOMIZING.md."
 
 require-device: ## Fail unless an adb device is attached
 	@"$(ROOT)/scripts/require-device.sh"
@@ -111,8 +150,10 @@ run-raw: ## Same as `run`, using the Gradle-free build
 log: ## Stream app + crash logs from the device
 	@"$(ENV_RUN)" adb logcat -s NativeApp:V AndroidRuntime:E
 
-connected-test: require-device apk ## Run instrumentation tests on a device
-	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:connectedDebugAndroidTest
+# connectedDebugAndroidTest assembles the debug and test APKs itself, so no
+# separate `apk` prerequisite is needed.
+connected-test: require-device ## Run instrumentation tests on a device
+	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_ARGS) :app:connectedDebugAndroidTest
 
 uninstall: require-device ## Remove the app from the device
 	@"$(ENV_RUN)" adb uninstall $(APP_ID)
@@ -133,7 +174,7 @@ dist: ## Create a clean source archive for sharing (dist/*.tar.gz)
 	@"$(ROOT)/scripts/package-template.sh"
 
 lint: local-properties $(GRADLE) ## Run Android Lint on the debug variant
-	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:lintDebug
+	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_ARGS) :app:lintDebug
 
 check: test unit-test apk ## Host + JVM tests and debug APK
 	@echo "check: ok"

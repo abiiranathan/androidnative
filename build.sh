@@ -3,7 +3,10 @@
 # -> apksigner. Useful when Gradle cannot download its distribution or when you
 # want a fast, dependency-free APK. The primary build path is ./gradlew.
 #
-# Usage: ./build.sh [build|test|install|run|log|clean|help]
+# Limitations: only Java sources are compiled; Kotlin, AndroidX and Compose are
+# Gradle-only. Native flags below must be kept in step with CMakeLists.txt.
+#
+# Usage: ./build.sh [build|test|install|run|log|clean|symbols [LIB.so...]|help]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,14 +37,21 @@ readonly CFLAGS=(-std=c11 -O2 -fPIC -Wall -Wextra -Werror -fvisibility=hidden)
 # max-page-size=16384: required for devices with 16 KB pages (Android 15+).
 readonly LDFLAGS=(-shared -llog -Wl,--no-undefined -Wl,-z,max-page-size=16384)
 
+# Dynamic symbols a built library may export (extended regex, anchored by the
+# matcher): JNI entry points, plus the linker-defined markers some toolchains
+# emit for shared objects. Anything else means -fvisibility=hidden regressed.
+readonly ALLOWED_SYMBOLS='^(Java_|JNI_OnLoad$|JNI_OnUnload$|_edata$|_end$|__bss_start$|__end__$|_bss_end__$)'
+
 read -r -a ABI_LIST <<< "${ABIS//,/ }"
 readonly ABI_LIST
 
 die()  { echo "error: $*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || die "missing '$1' -- $2"; }
 
+# Prints the leading comment block of this file (everything up to the first
+# non-comment line) with the comment markers stripped.
 usage() {
-    sed -n '2,8p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "${BASH_SOURCE[0]}"
 }
 
 # Maps an Android ABI name to the NDK clang target triple prefix.
@@ -82,6 +92,40 @@ build_native() {
     done
 }
 
+# Asserts that each shared object exports only JNI entry points. With no
+# arguments it checks the per-ABI libraries produced by build_native; pass
+# explicit paths to check Gradle/CMake output with the same rules, e.g.
+#   ./build.sh symbols app/build/intermediates/cxx/Debug/*/obj/arm64-v8a/*.so
+check_symbols() {
+    local nm="$TOOLCHAIN/llvm-nm" so abi unexpected status=0
+    local -a libs=("$@")
+
+    [[ -x "$nm" ]] || die "missing $nm -- run ./bootstrap.sh"
+    if (( ${#libs[@]} == 0 )); then
+        for abi in "${ABI_LIST[@]}"; do
+            libs+=("$BUILD/stage/lib/$abi/lib${LIB_NAME}.so")
+        done
+    fi
+
+    echo ">> exported symbols"
+    for so in "${libs[@]}"; do
+        [[ -f "$so" ]] || die "no such library: $so"
+        # Default llvm-nm output is "<addr> <type> <name>"; the name is the
+        # last field. Defined dynamic symbols that do not match the allow-list
+        # are collected for the error report.
+        unexpected="$("$nm" -D --defined-only "$so" |
+            awk -v allowed="$ALLOWED_SYMBOLS" 'NF >= 3 && $NF !~ allowed { print $NF }')"
+        if [[ -n "$unexpected" ]]; then
+            echo "   FAIL $so exports unexpected symbols:" >&2
+            printf '        %s\n' $unexpected >&2
+            status=1
+        else
+            echo "   ok   $so"
+        fi
+    done
+    (( status == 0 )) || die "unexpected exported symbols (is -fvisibility=hidden still applied?)"
+}
+
 # aapt2 requires a package attribute, while AGP requires it to be absent from
 # the source manifest. Generate an equivalent manifest just for this build.
 generate_manifest() {
@@ -106,7 +150,8 @@ ensure_keystore() {
 
 build_apk() {
     rm -rf "$BUILD/classes" "$BUILD/dex" "$BUILD/gen" "$BUILD/res.zip" \
-           "$BUILD/AndroidManifest.xml" "$UNSIGNED_APK" "$ALIGNED_APK" "$APK"
+           "$BUILD/AndroidManifest.xml" "$BUILD/sources.txt" "$BUILD/classes.jar" \
+           "$UNSIGNED_APK" "$ALIGNED_APK" "$APK"
     mkdir -p "$BUILD/classes" "$BUILD/dex" "$BUILD/gen"
 
     echo ">> resources"
@@ -119,15 +164,31 @@ build_apk() {
         "$BUILD/res.zip"
 
     echo ">> java"
-    find "$APP_DIR/java" "$BUILD/gen" -name '*.java' -print0 |
-        xargs -0 javac --release 11 -Xlint:all -classpath "$ANDROID_JAR" -d "$BUILD/classes"
-    find "$BUILD/classes" -name '*.class' -print0 |
-        xargs -0 d8 --lib "$ANDROID_JAR" --min-api "$MIN_API" --output "$BUILD/dex"
+    # Hand javac its inputs through an @argfile rather than xargs: xargs may
+    # split a long list across several javac runs, and each run would see only
+    # part of the sources. Entries are quoted (and backslashes escaped) because
+    # javac splits argfile lines on whitespace, and project paths may contain
+    # spaces.
+    find "$APP_DIR/java" "$BUILD/gen" -name '*.java' |
+        sed 's/\\/\\\\/g; s/.*/"&"/' > "$BUILD/sources.txt"
+    [[ -s "$BUILD/sources.txt" ]] || die "no Java sources found under $APP_DIR/java"
+    javac --release 11 -Xlint:all -classpath "$ANDROID_JAR" -d "$BUILD/classes" \
+        @"$BUILD/sources.txt"
+
+    # d8 gets a single jar for the same reason: several d8 runs, each writing
+    # classes.dex into the same output directory, would overwrite each other.
+    (cd "$BUILD/classes" && zip -q -r "$BUILD/classes.jar" .)
+    d8 --lib "$ANDROID_JAR" --min-api "$MIN_API" --output "$BUILD/dex" "$BUILD/classes.jar"
 
     echo ">> package"
     zip -q -j "$UNSIGNED_APK" "$BUILD/dex/classes.dex"
     (cd "$BUILD/stage" && zip -q -r "$UNSIGNED_APK" lib)
+    # Native libraries stay deflated here and are extracted at install time
+    # (extractNativeLibs defaults to true when the manifest is silent), so what
+    # matters for 16 KB-page devices is the ELF segment alignment set by
+    # -Wl,-z,max-page-size above, not zip-level page alignment (zipalign -P 16).
     zipalign -f 4 "$UNSIGNED_APK" "$ALIGNED_APK"
+    zipalign -c 4 "$ALIGNED_APK" || die "zipalign verification failed for $ALIGNED_APK"
 
     ensure_keystore
     apksigner sign --ks "$KEYSTORE" --ks-key-alias "$KS_ALIAS" \
@@ -165,6 +226,15 @@ case "$cmd" in
     test)
         run_tests
         ;;
+    symbols)
+        shift
+        check_env
+        # Without explicit libraries, check a fresh native build.
+        if (( $# == 0 )); then
+            build_native
+        fi
+        check_symbols "$@"
+        ;;
     install)
         check_env
         require_device
@@ -187,6 +257,6 @@ case "$cmd" in
         rm -rf "$BUILD"
         ;;
     *)
-        die "usage: $0 [build|test|install|run|log|clean|help]"
+        die "usage: $0 [build|test|install|run|log|clean|symbols|help]"
         ;;
 esac

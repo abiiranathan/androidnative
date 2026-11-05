@@ -13,12 +13,16 @@ androidxTestExtJunit = "1.3.0"
 
 [libraries]
 junit = { module = "junit:junit", version.ref = "junit" }
+# Used by the buildscript block in the root build.gradle.kts: AGP's runtime
+# Kotlin plugin otherwise resolves an older Kotlin Gradle plugin.
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivityCompose" }
+# Versionless Compose libraries below take their versions from this BOM.
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
 androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+# Debug-only tooling: declare with debugImplementation, never implementation.
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
@@ -26,6 +30,16 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "android
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
 # androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 # gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+
+# Optional: `implementation(libs.bundles.compose)` replaces four separate lines.
+# The BOM platform and the debug-only tooling are intentionally not included.
+[bundles]
+compose = [
+    "androidx-compose-ui",
+    "androidx-compose-ui-graphics",
+    "androidx-compose-ui-tooling-preview",
+    "androidx-compose-material3",
+]
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

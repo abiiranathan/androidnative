@@ -2,8 +2,15 @@
 # Shared configuration for every script in this project.
 #
 # Usage:
-#   source env.sh            # interactive shells / shell profile
+#   source env.sh            # one-off, in the interactive shell you work in
+#   direnv allow             # preferred for interactive use: see .envrc
 #   scripts/env-run.sh CMD   # scripts and Makefile recipes
+#
+# Do NOT source this from ~/.bashrc or ~/.zshrc. It exports project-specific
+# values (ANDROID_NDK_HOME pinned to this project's NDK, API_LEVEL, MIN_API,
+# APP_ID, ...) and prepends SDK directories to PATH, so a profile-level source
+# would leak them into every other project. direnv loads and unloads the same
+# settings as you enter and leave this directory.
 #
 # This file is *sourced*, so it deliberately does not enable `set -e`.
 # SDK/NDK/CMake versions are read from gradle.properties, which is the single
@@ -15,12 +22,14 @@
 _android_dev_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export ANDROID_DEV_ROOT="$_android_dev_root"
 
-# Reads `key=value` from gradle.properties, falling back to $2.
+# Reads `key=value` from gradle.properties, falling back to $2. The key is
+# matched literally (dots are not regex wildcards) and a trailing CR from a
+# CRLF checkout is stripped so it cannot leak into paths and version strings.
 _android_dev_prop() {
-    local key="$1" fallback="$2" value=""
+    local key="$1" fallback="$2" value="" pattern="${1//./[.]}"
     if [[ -r "$_android_dev_root/gradle.properties" ]]; then
-        value="$(sed -n "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*//p" \
-            "$_android_dev_root/gradle.properties" | tail -n 1)"
+        value="$(sed -n "s/^[[:space:]]*${pattern}[[:space:]]*=[[:space:]]*//p" \
+            "$_android_dev_root/gradle.properties" | tail -n 1 | tr -d '\r')"
     fi
     printf '%s' "${value:-$fallback}"
 }
@@ -28,7 +37,7 @@ _android_dev_prop() {
 # ---------------------------------------------------------------------------
 # Versions (gradle.properties is authoritative)
 # ---------------------------------------------------------------------------
-API_LEVEL="$(_android_dev_prop android.compileSdk 35)"                  # compileSdk
+API_LEVEL="$(_android_dev_prop android.compileSdk 36)"                  # compileSdk
 TARGET_API="$(_android_dev_prop android.targetSdk "$API_LEVEL")"        # targetSdk
 MIN_API="$(_android_dev_prop android.minSdk 24)"                        # minSdk
 BUILD_TOOLS_VERSION="$(_android_dev_prop android.buildToolsVersion 36.0.0)"
@@ -77,6 +86,8 @@ case "$(uname -s)" in
         CMDLINE_OS="linux"
         ;;
     Darwin)
+        # The macOS NDK toolchain is a universal binary; the tag is the same
+        # on Intel and Apple silicon.
         NDK_HOST_TAG="darwin-x86_64"
         CMDLINE_OS="mac"
         ;;

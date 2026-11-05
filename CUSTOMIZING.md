@@ -81,8 +81,8 @@ Android Studio; this project does not require it.
 Almost all version numbers live in **`gradle.properties`**:
 
 ```properties
-android.compileSdk=35
-android.targetSdk=35
+android.compileSdk=36
+android.targetSdk=36
 android.minSdk=24
 android.buildToolsVersion=36.0.0
 android.ndkVersion=27.0.12077973
@@ -143,7 +143,8 @@ and Gradle as described in section 7.
 
 Google Play raises its required `targetSdk` every year. Since **August 31,
 2026**, new apps and app updates must target **Android 16 (API level 36)** or
-higher. This template pins `targetSdk=35`, so **bump it before publishing**.
+higher. This template pins `targetSdk=36`, so no target API bump is needed
+before publishing.
 
 Check the current rule in the
 [Play target API guide](https://developer.android.com/google/play/requirements/target-sdk)

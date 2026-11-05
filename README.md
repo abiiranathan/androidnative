@@ -170,8 +170,8 @@ use `arm64-v8a`; an x86_64 emulator uses the other.
 `gradle.properties` is authoritative:
 
 ```properties
-android.compileSdk=35
-android.targetSdk=35
+android.compileSdk=36
+android.targetSdk=36
 android.minSdk=24
 android.buildToolsVersion=36.0.0
 android.ndkVersion=27.0.12077973
