@@ -106,11 +106,23 @@ eclipse {
 
 // Safely attach compile dependencies once AGP finishes configuring variants
 afterEvaluate {
-    configurations.findByName("debugCompileClasspath")?.let {
-        eclipse.classpath.plusConfigurations.add(it)
-    }
-    configurations.findByName("debugAndroidTestCompileClasspath")?.let {
-        eclipse.classpath.plusConfigurations.add(it)
+    val androidTestJars = configurations
+        .findByName("debugAndroidTestCompileClasspath")
+        ?.incoming
+        ?.artifactView {
+            attributes {
+                attribute(
+                    Attribute.of("artifactType", String::class.java),
+                    "android-classes-jar"
+                )
+            }
+        }?.files
+
+    eclipse.classpath.file.whenMerged {
+        val cp = this as Classpath
+        androidTestJars?.forEach { jar ->
+            cp.entries.add(Library(fileReference(jar)))
+        }
     }
 }
 
