@@ -15,7 +15,7 @@ version="${GRADLE_VERSION:-}"
 if [[ -z "$version" && -r "$properties" ]]; then
     version="$(sed -n 's/^distributionUrl=.*gradle-\([0-9.]*\)-.*/\1/p' "$properties" | head -n 1)"
 fi
-version="${version:-8.10.2}"
+version="${version:-9.8.2}"
 
 if (( force == 0 )) && [[ -x "$root/gradlew" && -f "$root/gradle/wrapper/gradle-wrapper.jar" ]]; then
     echo "Gradle wrapper already present (use --force to regenerate)."

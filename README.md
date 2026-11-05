@@ -64,54 +64,54 @@ signing and Play Store preparation, see **[CUSTOMIZING.md](CUSTOMIZING.md)**.
 
 ## Layout
 
-| Path | Purpose |
-| --- | --- |
-| `bootstrap.sh` | Installs command-line tools, platform, build-tools, NDK, CMake, platform-tools. Idempotent. |
-| `env.sh` | Shared shell configuration. Reads versions from `gradle.properties`, puts SDK tools on `PATH`, detects a JDK. Safe to source from your profile. |
-| `gradle.properties` | **Single source of truth** for SDK/NDK/CMake versions, ABIs, app identity, and Gradle settings. |
-| `settings.gradle.kts`, `build.gradle.kts` | Gradle project and plugin configuration. |
-| `gradle/libs.versions.toml` | Version catalog (AGP, test libraries). Add dependencies here. |
-| `gradlew`, `gradle/wrapper/` | Pinned Gradle 8.10.2 wrapper. Commit these. |
-| `app/build.gradle.kts` | App module: namespace, SDK levels, ABIs, CMake hookup, test dependencies. |
-| `app/src/main/java/` | `MainActivity` and the `NativeGreeting` JNI facade. |
-| `app/src/main/cpp/` | `core.[ch]` (portable C, no JNI), `jni_bridge.c`, `CMakeLists.txt`. |
-| `app/src/androidTest/` | On-device instrumentation tests (`NativeGreetingTest`). |
-| `tests/test_core.c` | Host-side unit tests for `core.c`. |
-| `build.sh` | Gradle-free fallback: NDK clang → aapt2 → javac → d8 → zipalign → apksigner. |
-| `scripts/` | `env-run`, `doctor`, wrapper generation, device check, `local.properties`. |
-| `Makefile` | Developer entry points (see `make help`). |
-| `QUICKSTART.md` | Clean-machine walkthrough, from prerequisites to a running app. |
-| `CUSTOMIZING.md` | File-by-file guide: app identity, SDK/API updates, dependencies, signing and Play Store. |
-| `scripts/new-project.sh` | Renames the template for a new app and package. |
-| `scripts/package-template.sh` | Creates a clean, shareable source archive (`make dist`). |
+| Path                                      | Purpose                                                                                                                                         |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap.sh`                            | Installs command-line tools, platform, build-tools, NDK, CMake, platform-tools. Idempotent.                                                     |
+| `env.sh`                                  | Shared shell configuration. Reads versions from `gradle.properties`, puts SDK tools on `PATH`, detects a JDK. Safe to source from your profile. |
+| `gradle.properties`                       | **Single source of truth** for SDK/NDK/CMake versions, ABIs, app identity, and Gradle settings.                                                 |
+| `settings.gradle.kts`, `build.gradle.kts` | Gradle project and plugin configuration.                                                                                                        |
+| `gradle/libs.versions.toml`               | Version catalog (AGP, Kotlin plugin, test libraries). Add dependencies here.                                                                    |
+| `gradlew`, `gradle/wrapper/`              | Pinned Gradle 9.8.2 wrapper. Commit these.                                                                                                     |
+| `app/build.gradle.kts`                    | App module: namespace, SDK levels, ABIs, CMake hookup, test dependencies.                                                                       |
+| `app/src/main/java/`                      | `MainActivity` and the `NativeGreeting` JNI facade.                                                                                             |
+| `app/src/main/cpp/`                       | `core.[ch]` (portable C, no JNI), `jni_bridge.c`, `CMakeLists.txt`.                                                                             |
+| `app/src/androidTest/`                    | On-device instrumentation tests (`NativeGreetingTest`).                                                                                         |
+| `tests/test_core.c`                       | Host-side unit tests for `core.c`.                                                                                                              |
+| `build.sh`                                | Gradle-free fallback: NDK clang → aapt2 → javac → d8 → zipalign → apksigner.                                                                    |
+| `scripts/`                                | `env-run`, `doctor`, wrapper generation, device check, `local.properties`.                                                                      |
+| `Makefile`                                | Developer entry points (see `make help`).                                                                                                       |
+| `QUICKSTART.md`                           | Clean-machine walkthrough, from prerequisites to a running app.                                                                                 |
+| `CUSTOMIZING.md`                          | File-by-file guide: app identity, SDK/API updates, dependencies, signing and Play Store.                                                        |
+| `scripts/new-project.sh`                  | Renames the template for a new app and package.                                                                                                 |
+| `scripts/package-template.sh`             | Creates a clean, shareable source archive (`make dist`).                                                                                        |
 
 ## Make targets
 
 Run `make help` for the full list.
 
-| Target | What it does |
-| --- | --- |
-| `make bootstrap` | Install missing SDK components and generate `gradlew`. |
-| `make doctor` | Diagnostic check; non-zero exit if something is missing. |
-| `make test` | Compile and run the portable C core tests on the host. |
-| `make test-sanitize` | Same tests with ASan + UBSan. |
-| `make apk` | Debug APK via Gradle. |
-| `make apk-raw` | Debug APK without Gradle (offline/no-wrapper fallback). |
-| `make release` | Release APK, signed with the local debug key. |
-| `make bundle` | Release App Bundle (`.aab`) for Play; configure release signing first. |
-| `make dist` | Clean source archive in `dist/`, with SHA-256 checksum. |
-| `make install` | Install the debug APK with `adb install -r`. |
-| `make install-raw` | Install the Gradle-free APK (builds it if missing). |
-| `make run` | Build, install, launch, and wait for the activity. |
-| `make run-raw` | Same as `run`, using the Gradle-free build. |
-| `make connected-test` | Run instrumentation tests on the connected device. |
-| `make log` | `adb logcat -s NativeApp:V AndroidRuntime:E`. |
-| `make devices` | List attached devices. |
-| `make uninstall` | Remove the app from the device. |
-| `make clean` | Remove build outputs. |
-| `make distclean` | Also remove `.gradle/`, `local.properties`, IDE files, `dist/`. |
-| `make lint` | Android Lint report at `app/build/reports/lint-results-debug.html`. |
-| `make check` | Host tests + debug APK. |
+| Target                | What it does                                                           |
+| --------------------- | ---------------------------------------------------------------------- |
+| `make bootstrap`      | Install missing SDK components and generate `gradlew`.                 |
+| `make doctor`         | Diagnostic check; non-zero exit if something is missing.               |
+| `make test`           | Compile and run the portable C core tests on the host.                 |
+| `make test-sanitize`  | Same tests with ASan + UBSan.                                          |
+| `make apk`            | Debug APK via Gradle.                                                  |
+| `make apk-raw`        | Debug APK without Gradle (offline/no-wrapper fallback).                |
+| `make release`        | Release APK, signed with the local debug key.                          |
+| `make bundle`         | Release App Bundle (`.aab`) for Play; configure release signing first. |
+| `make dist`           | Clean source archive in `dist/`, with SHA-256 checksum.                |
+| `make install`        | Install the debug APK with `adb install -r`.                           |
+| `make install-raw`    | Install the Gradle-free APK (builds it if missing).                    |
+| `make run`            | Build, install, launch, and wait for the activity.                     |
+| `make run-raw`        | Same as `run`, using the Gradle-free build.                            |
+| `make connected-test` | Run instrumentation tests on the connected device.                     |
+| `make log`            | `adb logcat -s NativeApp:V AndroidRuntime:E`.                          |
+| `make devices`        | List attached devices.                                                 |
+| `make uninstall`        | Remove the app from the device.                                        |
+| `make clean`          | Remove build outputs.                                                  |
+| `make distclean`      | Also remove `.gradle/`, `local.properties`, IDE files, `dist/`.        |
+| `make lint`           | Android Lint report at `app/build/reports/lint-results-debug.html`.    |
+| `make check`          | Host tests + debug APK.                                                |
 
 ## Requirements
 
@@ -155,7 +155,7 @@ use `arm64-v8a`; an x86_64 emulator uses the other.
 android.compileSdk=34
 android.targetSdk=34
 android.minSdk=24
-android.buildToolsVersion=34.0.0
+android.buildToolsVersion=36.0.0
 android.ndkVersion=27.0.12077973
 android.cmakeVersion=3.22.1
 android.abis=arm64-v8a,x86_64
@@ -205,11 +205,11 @@ Native: vendor the source with `add_subdirectory` in
 - **cmdline-tools download 404s:** set `CMDLINE_TOOLS_REV` to the current
   revision from Google's "Command line tools only" downloads and re-run
   `./bootstrap.sh`.
-- **JDK/toolchain errors:** `make doctor`; on Arch select JDK 17 with
-  `sudo archlinux-java set java-17-openjdk`.
+- **JDK/toolchain errors:** `make doctor`; the Gradle daemon uses the
+  project-pinned JDK 17 (on Arch: `sudo archlinux-java set java-17-openjdk`).
 - **Gradle download/network problems:** `make apk-raw` builds the same APK
   without Gradle, using only the installed SDK tools.
 - **16 KB page devices (Android 15+):** both build paths already pass
   `-Wl,-z,max-page-size=16384`; the NDK is r27.
 - **Lint reports newer dependency versions:** informational only. This project
-  pins AGP 8.7.3 and Gradle 8.10.2 for a known-compatible combination.
+  pins AGP 9.5.0 and Gradle 9.8.2.

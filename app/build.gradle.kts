@@ -18,7 +18,7 @@ fun configString(property: String, fallback: String): String =
 val sdkCompile: Int = configInt("android.compileSdk", 34)
 val sdkTarget: Int = configInt("android.targetSdk", sdkCompile)
 val sdkMin: Int = configInt("android.minSdk", 24)
-val toolBuildTools: String = configString("android.buildToolsVersion", "34.0.0")
+val toolBuildTools: String = configString("android.buildToolsVersion", "36.0.0")
 val toolNdk: String = configString("android.ndkVersion", "27.0.12077973")
 val toolCmake: String = configString("android.cmakeVersion", "3.22.1")
 val abis: List<String> = configString("android.abis", "arm64-v8a,x86_64")
@@ -76,6 +76,7 @@ android {
 }
 
 dependencies {
+    testImplementation(libs.junit)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)

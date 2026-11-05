@@ -31,7 +31,7 @@ _android_dev_prop() {
 API_LEVEL="$(_android_dev_prop android.compileSdk 34)"                  # compileSdk
 TARGET_API="$(_android_dev_prop android.targetSdk "$API_LEVEL")"        # targetSdk
 MIN_API="$(_android_dev_prop android.minSdk 24)"                        # minSdk
-BUILD_TOOLS_VERSION="$(_android_dev_prop android.buildToolsVersion 34.0.0)"
+BUILD_TOOLS_VERSION="$(_android_dev_prop android.buildToolsVersion 36.0.0)"
 NDK_VERSION="$(_android_dev_prop android.ndkVersion 27.0.12077973)"
 CMAKE_VERSION="$(_android_dev_prop android.cmakeVersion 3.22.1)"
 ABIS="$(_android_dev_prop android.abis 'arm64-v8a,x86_64')"             # NDK ABIs

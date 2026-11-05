@@ -11,7 +11,7 @@ If you only want to build the existing checkout, skip to
 
 A minimal Android app with a C library behind JNI:
 
-- Gradle (Kotlin DSL) + Android Gradle Plugin 8.7.3
+- Gradle 9.8.2 (Kotlin DSL) + Android Gradle Plugin 9.5.0
 - NDK r27 + CMake for `lib<package>.so`
 - A Gradle-free fallback build (`make apk-raw`) that uses only SDK tools
 - Host-side C unit tests (`make test`) and on-device JNI tests
@@ -197,7 +197,7 @@ This downloads the Android command-line tools into `$ANDROID_HOME` (default
 
 - `platform-tools` (includes `adb`)
 - `platforms;android-34`
-- `build-tools;34.0.0`
+- `build-tools;36.0.0`
 - `ndk;27.0.12077973`
 - `cmake;3.22.1`
 

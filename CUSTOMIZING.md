@@ -84,7 +84,7 @@ Almost all version numbers live in **`gradle.properties`**:
 android.compileSdk=34
 android.targetSdk=34
 android.minSdk=24
-android.buildToolsVersion=34.0.0
+android.buildToolsVersion=36.0.0
 android.ndkVersion=27.0.12077973
 android.cmakeVersion=3.22.1
 android.abis=arm64-v8a,x86_64
@@ -507,8 +507,7 @@ make release
 Verify the APK certificate:
 
 ```sh
-# 34.0.0 is the build-tools version in gradle.properties; adjust if you bumped it.
-"$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs \
+"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs \
     app/build/outputs/apk/release/app-release.apk
 ```
 
