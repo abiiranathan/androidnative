@@ -1,5 +1,5 @@
 package com.example.nativeapp;
-    
+
 import android.app.Activity;
 import android.os.Build;
 import android.os.Bundle;

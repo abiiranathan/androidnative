@@ -31,8 +31,14 @@ tar -C "$root" \
     --exclude='./.externalNativeBuild' --exclude='./.externalNativeBuild/*' \
     --exclude='./build' --exclude='./build/*' \
     --exclude='./app/build' --exclude='./app/build/*' \
+    --exclude='./app/bin' --exclude='./app/bin/*' \
     --exclude='./app/.cxx' --exclude='./app/.cxx/*' \
     --exclude='./app/.externalNativeBuild' --exclude='./app/.externalNativeBuild/*' \
+    --exclude='./.classpath' --exclude='./.project' \
+    --exclude='./.settings' --exclude='./.settings/*' \
+    --exclude='./app/.classpath' --exclude='./app/.project' \
+    --exclude='./app/.settings' --exclude='./app/.settings/*' \
+    --exclude='./app/factorypath' \
     --exclude='./dist' --exclude='./dist/*' \
     --exclude='./captures' --exclude='./captures/*' \
     --exclude='./out' --exclude='./out/*' \
@@ -52,8 +58,10 @@ tar -C "$root" \
 polluted() {
     find "$stage/$top" \
         \( -name '.git' -o -name '.gradle' -o -name '.kotlin' -o -name '.idea' \
-           -o -name '.externalNativeBuild' -o -name 'build' -o -name '.cxx' \
-           -o -name 'dist' -o -name 'captures' -o -name 'out' \
+           -o -name '.externalNativeBuild' -o -name 'build' -o -name 'bin' \
+           -o -name '.cxx' -o -name 'dist' -o -name 'captures' -o -name 'out' \
+           -o -name '.classpath' -o -name '.project' -o -name '.settings' \
+           -o -name 'factorypath' \
            -o -name 'local.properties' -o -name 'keystore.properties' \
            -o -name 'signing.properties' -o -name '*.iml' \
            -o -name '*.apk' -o -name '*.aab' -o -name '*.ap_' \

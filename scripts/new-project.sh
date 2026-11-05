@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Renames this template for a new project: application ID, Java package and
-# source directories, app label, native library, JNI symbol, log tag and the
+# Renames this template for a new project: application ID, Java/Kotlin package
+# and source directories, app label, native library, JNI symbol, log tag and the
 # Gradle project name. The checkout is edited in place; .git is never touched.
 #
 # Usage:
@@ -42,7 +42,7 @@ done
 [[ -n "$package" ]] || die "--package is required (try --help)"
 [[ "$display_name" != *$'\n'* ]] || die "--name must be a single line"
 [[ "$package" =~ ^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$ ]] \
-    || die "--package must be a Java package with at least two segments, e.g. com.example.myapp"
+    || die "--package must be a Java/Kotlin package with at least two segments, e.g. com.example.myapp"
 
 # ---------------------------------------------------------------------------
 # Derive names.
@@ -151,7 +151,7 @@ if [[ "$package" == "$old_package" && "$project" == "$old_project" \
     die "the project already has these values; nothing to rename"
 fi
 
-for base in app/src/main/java app/src/androidTest/java; do
+for base in app/src/main/java app/src/test/java app/src/androidTest/java; do
     old_dir="$base/${old_package//.//}"
     new_dir="$base/${package//.//}"
     if [[ "$old_dir" != "$new_dir" && -e "$new_dir" ]]; then
@@ -160,14 +160,14 @@ for base in app/src/main/java app/src/androidTest/java; do
 done
 
 # ---------------------------------------------------------------------------
-# Move Java source trees.
+# Move Java/Kotlin source trees.
 # ---------------------------------------------------------------------------
 moved_dirs=()
-for base in app/src/main/java app/src/androidTest/java; do
+for base in app/src/main/java app/src/test/java app/src/androidTest/java; do
     old_dir="$base/${old_package//.//}"
     new_dir="$base/${package//.//}"
     [[ "$old_dir" == "$new_dir" ]] && continue
-    [[ -d "$old_dir" ]] || die "expected source directory $old_dir is missing"
+    [[ -d "$old_dir" ]] || continue
 
     mkdir -p "$(dirname "$new_dir")"
     mv "$old_dir" "$new_dir"
@@ -198,10 +198,14 @@ replace_in_file "APP_ID      := $old_package" \
 replace_in_file ">$old_label<" \
     ">$(xml_escape "$display_name")<" app/src/main/res/values/strings.xml
 
-# Rewrite every Java package declaration, at any package depth.
+# Rewrite every Java and Kotlin package declaration, at any package depth.
 while IFS= read -r -d '' java_file; do
     replace_in_file "package $old_package;" "package $package;" "$java_file"
 done < <(find app/src -name '*.java' -print0)
+
+while IFS= read -r -d '' kotlin_file; do
+    replace_in_file "package $old_package" "package $package" "$kotlin_file"
+done < <(find app/src -name '*.kt' -print0)
 
 replace_in_file "$old_jni" "$new_jni" app/src/main/cpp/jni_bridge.c
 replace_in_file "#define LOG_TAG \"$old_log_tag\"" \
@@ -248,6 +252,13 @@ check_absent() {
         fail=1
     fi
 }
+check_absent_regex() {
+    local pattern="$1" where="$2" what="$3"
+    if grep -rqE -- "$pattern" $where 2>/dev/null; then
+        echo "error: $what still matches '$pattern'" >&2
+        fail=1
+    fi
+}
 
 check_contains "android.applicationId=$package" gradle.properties "new application ID"
 check_contains "rootProject.name = \"$project\"" settings.gradle.kts "new project name"
@@ -257,9 +268,19 @@ if [[ "$old_jni" != "$new_jni" ]]; then
 fi
 if [[ "$old_package" != "$package" ]]; then
     check_absent "package $old_package;" "app/src" "Java sources"
+    check_absent_regex "^[[:space:]]*package[[:space:]]+${old_package//./\\.}[[:space:]]*$" \
+        "app/src" "Kotlin sources"
 fi
 check_contains "package $package;" \
     "app/src/main/java/${package//.//}/MainActivity.java" "new Java package"
+if [[ -f "app/src/main/java/${package//.//}/KotlinSmoke.kt" ]]; then
+    check_contains "package $package" \
+        "app/src/main/java/${package//.//}/KotlinSmoke.kt" "new Kotlin package"
+fi
+if [[ -f "app/src/test/java/${package//.//}/KotlinSmokeTest.kt" ]]; then
+    check_contains "package $package" \
+        "app/src/test/java/${package//.//}/KotlinSmokeTest.kt" "new Kotlin test package"
+fi
 check_contains "System.loadLibrary(\"$lib_name\")" \
     "app/src/main/java/${package//.//}/NativeGreeting.java" "new native library name"
 check_contains ">$(xml_escape "$display_name")<" \

@@ -43,7 +43,7 @@ if [[ -z "$sha256" ]] && command -v curl >/dev/null 2>&1; then
 fi
 
 # Use a throwaway project so the installed Gradle never evaluates this project's
-# build scripts (a system Gradle 9.x cannot necessarily configure AGP 8.x).
+# build scripts (a system Gradle may not match the project's AGP requirements).
 printf 'rootProject.name = "wrapper-seed"\n' > "$tmp/settings.gradle.kts"
 wrapper_args=(wrapper --gradle-version "$version" --distribution-type bin)
 if [[ -n "$sha256" ]]; then

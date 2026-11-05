@@ -38,9 +38,9 @@ Rule of thumb: edit source and version declarations in Git. Never commit
 ./scripts/new-project.sh --name "My App" --package com.example.myapp
 ```
 
-It updates the application ID, Java package directories and declarations, JNI
-symbol, native library name, app label, log tag, README title and Gradle project
-name. Review the diff before committing:
+It updates the application ID, Java/Kotlin package directories and
+declarations, JNI symbol, native library name, app label, log tag, README title
+and Gradle project name. Review the diff before committing:
 
 ```sh
 git diff

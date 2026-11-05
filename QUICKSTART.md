@@ -11,10 +11,10 @@ If you only want to build the existing checkout, skip to
 
 A minimal Android app with a C library behind JNI:
 
-- Gradle 9.8.2 (Kotlin DSL) + Android Gradle Plugin 9.5.0
+- Gradle 9.8.2 (Kotlin DSL) + Android Gradle Plugin 9.5.1
 - NDK r27 + CMake for `lib<package>.so`
 - A Gradle-free fallback build (`make apk-raw`) that uses only SDK tools
-- Host-side C unit tests (`make test`) and on-device JNI tests
+- Host-side C tests (`make test`), JVM/Kotlin tests (`make unit-test`) and on-device JNI tests
   (`make connected-test`)
 - SDK, NDK, CMake and ABI versions defined once in `gradle.properties`
 
@@ -155,7 +155,7 @@ For a new application, set its display name and Java application ID:
 The script edits the current checkout in place and changes:
 
 - `android.applicationId` in `gradle.properties` (and its fallbacks)
-- the Java package directories and `package` declarations
+- the Java/Kotlin package directories and `package` declarations
 - the JNI symbol in `app/src/main/cpp/jni_bridge.c`
 - the native library name (`lib<last-package-segment>.so`)
 - the app label, log tag, README title and Gradle `rootProject.name`
@@ -170,7 +170,7 @@ Derived values:
 
 Rules:
 
-- `--package` must contain at least two segments and be a valid Java package.
+- `--package` must contain at least two segments and be a valid Java/Kotlin package.
 - By default the script refuses to run when the Git working tree is dirty.
   Commit first, or pass `--force` if you intentionally want to rename on top of
   local edits.
@@ -256,6 +256,7 @@ Verify the host-side C tests before involving Android:
 ```sh
 make test
 make test-sanitize     # optional: ASan + UBSan
+make unit-test         # JVM/Kotlin tests
 ```
 
 ## 6. Build the app
@@ -277,7 +278,7 @@ make apk-raw      # same app without Gradle, using SDK tools only
 make release      # release variant, signed with the local debug key
 make bundle       # release App Bundle for Play (configure signing first)
 make lint         # report: app/build/reports/lint-results-debug.html
-make check        # host tests + debug APK
+make check        # host + JVM tests and debug APK
 ```
 
 `make release` is for local verification. Its signing key is the shared Android
@@ -409,7 +410,7 @@ change the NDK or linker flags, keep that option.
 
 **Build works but the app crashes on launch with `UnsatisfiedLinkError`**
 
-The Java package, JNI symbol and native library name must stay in sync. Re-run
+The Java/Kotlin package, JNI symbol and native library name must stay in sync. Re-run
 `make apk` after changing any of them, and check the symbol:
 
 ```sh
@@ -428,6 +429,7 @@ The `new-project.sh` script updates all three together.
 [ ] ./bootstrap.sh
 [ ] make doctor
 [ ] make test
+[ ] make unit-test
 [ ] make apk
 [ ] adb devices shows "device"
 [ ] make run

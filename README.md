@@ -72,11 +72,14 @@ signing and Play Store preparation, see **[CUSTOMIZING.md](CUSTOMIZING.md)**.
 | `settings.gradle.kts`, `build.gradle.kts` | Gradle project and plugin configuration.                                                                                                        |
 | `gradle/libs.versions.toml`               | Version catalog (AGP, Kotlin plugin, test libraries). Add dependencies here.                                                                    |
 | `gradlew`, `gradle/wrapper/`              | Pinned Gradle 9.8.2 wrapper. Commit these.                                                                                                     |
-| `app/build.gradle.kts`                    | App module: namespace, SDK levels, ABIs, CMake hookup, test dependencies.                                                                       |
-| `app/src/main/java/`                      | `MainActivity` and the `NativeGreeting` JNI facade.                                                                                             |
+| `app/build.gradle.kts`                    | App module: namespace, SDK levels, ABIs, CMake hookup, test dependencies, Eclipse/clangd integration.                                           |
+| `app/src/main/java/`                      | Java + Kotlin sources: `MainActivity`, the `NativeGreeting` JNI facade, `KotlinSmoke`.                                                           |
+| `app/src/test/java/`                      | JVM unit tests (Kotlin `KotlinSmokeTest`); run with `make unit-test`.                                                                           |
 | `app/src/main/cpp/`                       | `core.[ch]` (portable C, no JNI), `jni_bridge.c`, `CMakeLists.txt`.                                                                             |
 | `app/src/androidTest/`                    | On-device instrumentation tests (`NativeGreetingTest`).                                                                                         |
+| `app/.clangd`                             | clangd config pointing at the build's native compile database.                                                                                  |
 | `tests/test_core.c`                       | Host-side unit tests for `core.c`.                                                                                                              |
+| `.vscode/`                                | Java/Kotlin/clangd extension recommendations and project settings.                                                                              |
 | `build.sh`                                | Gradle-free fallback: NDK clang → aapt2 → javac → d8 → zipalign → apksigner.                                                                    |
 | `scripts/`                                | `env-run`, `doctor`, wrapper generation, device check, `local.properties`.                                                                      |
 | `Makefile`                                | Developer entry points (see `make help`).                                                                                                       |
@@ -95,6 +98,7 @@ Run `make help` for the full list.
 | `make doctor`         | Diagnostic check; non-zero exit if something is missing.               |
 | `make test`           | Compile and run the portable C core tests on the host.                 |
 | `make test-sanitize`  | Same tests with ASan + UBSan.                                          |
+| `make unit-test`      | Run the JVM/Kotlin unit tests (`:app:testDebugUnitTest`).              |
 | `make apk`            | Debug APK via Gradle.                                                  |
 | `make apk-raw`        | Debug APK without Gradle (offline/no-wrapper fallback).                |
 | `make release`        | Release APK, signed with the local debug key.                          |
@@ -107,11 +111,11 @@ Run `make help` for the full list.
 | `make connected-test` | Run instrumentation tests on the connected device.                     |
 | `make log`            | `adb logcat -s NativeApp:V AndroidRuntime:E`.                          |
 | `make devices`        | List attached devices.                                                 |
-| `make uninstall`        | Remove the app from the device.                                        |
-| `make clean`          | Remove build outputs.                                                  |
-| `make distclean`      | Also remove `.gradle/`, `local.properties`, IDE files, `dist/`.        |
+| `make uninstall`      | Remove the app from the device.                                        |
+| `make clean`          | Remove build outputs, including `app/bin/`.                            |
+| `make distclean`      | Also remove caches, `local.properties`, IDE files, `dist/`.            |
 | `make lint`           | Android Lint report at `app/build/reports/lint-results-debug.html`.    |
-| `make check`          | Host tests + debug APK.                                                |
+| `make check`          | Host + JVM tests and debug APK.                                        |
 
 ## Requirements
 
@@ -127,6 +131,20 @@ Run `make help` for the full list.
 `bootstrap.sh` installs everything under `$ANDROID_HOME` (default
 `$HOME/Android/Sdk`) and writes a gitignored `local.properties` so Gradle and
 IDEs find the same SDK.
+
+## Editor setup
+
+VS Code settings and extension recommendations (Java, Kotlin and clangd) are
+included. The Java language server reads the generated Eclipse classpath;
+refresh it after adding or changing dependencies:
+
+```sh
+./gradlew :app:eclipseClasspath
+```
+
+clangd reads the native compile database produced by the Gradle build. Build
+once after a clean (for example `make apk`) to regenerate it. Generated files
+such as `.classpath`, `app/bin/` and `app/.cxx/` are gitignored.
 
 ## Using a physical device
 
@@ -212,4 +230,4 @@ Native: vendor the source with `add_subdirectory` in
 - **16 KB page devices (Android 15+):** both build paths already pass
   `-Wl,-z,max-page-size=16384`; the NDK is r27.
 - **Lint reports newer dependency versions:** informational only. This project
-  pins AGP 9.5.0 and Gradle 9.8.2.
+  pins AGP 9.5.1 and Gradle 9.8.2.

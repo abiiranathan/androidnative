@@ -82,7 +82,7 @@ build_native() {
     done
 }
 
-# aapt2 requires a package attribute, while AGP 8 requires it to be absent from
+# aapt2 requires a package attribute, while AGP requires it to be absent from
 # the source manifest. Generate an equivalent manifest just for this build.
 generate_manifest() {
     awk -v pkg="$APP_ID" '

@@ -1,2 +1,5 @@
+# Stable compile database published by the Gradle native build.
+# Run `make apk` (or `./gradlew :app:configureCMakeDebug`) to regenerate it
+# after `make clean` or a fresh checkout.
 CompileFlags:
   CompilationDatabase: .cxx/tools/debug/arm64-v8a

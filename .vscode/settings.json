@@ -1,7 +1,24 @@
 {
     "java.import.gradle.enabled": true,
-    "java.import.gradle.java.home": "/usr/lib/jvm/java-17-openjdk",
     "java.server.launchMode": "Standard",
     "java.jdt.ls.androidSupport.enabled": "on",
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "explorer.excludeGitIgnore": false,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.jj": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/build": true,
+        "**/out": true,
+        "**/target": true,
+        "**/bin": true,
+        "**/.cxx": true,
+        "**/.gradle": true,
+        "**/.idea": true,
+        "**/.kotlin": true,
+        "**/dist": true
+    }
 }

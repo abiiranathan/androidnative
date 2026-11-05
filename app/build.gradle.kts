@@ -1,4 +1,5 @@
-import org.gradle.api.Action
+import org.gradle.api.attributes.Attribute
+import org.gradle.api.file.FileCollection
 import org.gradle.plugins.ide.eclipse.model.Classpath
 import org.gradle.plugins.ide.eclipse.model.Library
 import org.gradle.plugins.ide.eclipse.model.SourceFolder
@@ -79,16 +80,22 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    lint {
+        // abiFilters is built from gradle.properties, which Lint cannot
+        // evaluate; x86_64 is included, so this is a false positive.
+        disable += "ChromeOsAbiSupport"
+    }
 }
 
 // Configure the Eclipse model so VS Code's Java extension (Eclipse JDT LS)
-// recognizes Java source files and the Android platform classes.
+// recognizes Java/Kotlin source files and the Android platform classes.
 eclipse {
     classpath {
         file.whenMerged {
             val cp = this as Classpath
 
-            // Tell JDT LS where project Java source roots are
+            // Tell JDT LS where the project source roots are
             cp.entries.add(SourceFolder("src/main/java", null))
             cp.entries.add(SourceFolder("src/test/java", null))
             cp.entries.add(SourceFolder("src/androidTest/java", null))
@@ -104,10 +111,11 @@ eclipse {
     }
 }
 
-// Safely attach compile dependencies once AGP finishes configuring variants
-afterEvaluate {
-    val androidTestJars = configurations
-        .findByName("debugAndroidTestCompileClasspath")
+// Resolve a configuration to the JARs that JDT LS can consume. AGP exposes
+// Android dependencies as `android-classes-jar` artifacts, so attaching the
+// raw configuration would hand the editor AARs it cannot read.
+fun androidCompileJars(configurationName: String): FileCollection =
+    configurations.findByName(configurationName)
         ?.incoming
         ?.artifactView {
             attributes {
@@ -117,11 +125,24 @@ afterEvaluate {
                 )
             }
         }?.files
+        ?: files()
+
+// Attach both main and test compile dependencies once AGP has created the
+// variant configurations.
+afterEvaluate {
+    val mainJars = androidCompileJars("debugCompileClasspath")
+    val androidTestJars = androidCompileJars("debugAndroidTestCompileClasspath")
 
     eclipse.classpath.file.whenMerged {
         val cp = this as Classpath
-        androidTestJars?.forEach { jar ->
-            cp.entries.add(Library(fileReference(jar)))
+        val seen = cp.entries
+            .filterIsInstance<Library>()
+            .mapTo(mutableSetOf()) { it.path }
+
+        files(mainJars, androidTestJars).forEach { jar ->
+            if (seen.add(jar.absolutePath)) {
+                cp.entries.add(Library(fileReference(jar)))
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "redhat.java",
-        "JetBrains.kotlin-server"
+        "JetBrains.kotlin-server",
+        "llvm-vs-code-extensions.vscode-clangd"
     ]
 }

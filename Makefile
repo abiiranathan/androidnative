@@ -18,7 +18,7 @@ APK_DEBUG   := $(ROOT)/app/build/outputs/apk/debug/app-debug.apk
 GRADLE_OPTS ?= --console=plain
 
 .PHONY: help bootstrap doctor wrapper wrapper-force local-properties \
-        test test-sanitize apk apk-raw release bundle install install-raw run run-raw \
+        test test-sanitize unit-test apk apk-raw release bundle install install-raw run run-raw \
         log devices require-device connected-test uninstall clean dist distclean \
         check lint all
 
@@ -31,6 +31,7 @@ help: ## Show this help
 	@echo "  make bootstrap     # once: install SDK/NDK/CMake + gradlew"
 	@echo "  make doctor        # verify the toolchain"
 	@echo "  make test          # host C unit tests (no device needed)"
+	@echo "  make unit-test     # JVM/Kotlin unit tests (no device needed)"
 	@echo "  make apk           # debug APK via Gradle"
 	@echo "  make install       # install on the connected device"
 	@echo "  make run           # build, install and launch"
@@ -66,6 +67,9 @@ test-sanitize: ## Run host tests with ASan + UBSan
 		"$(ROOT)/tests/test_core.c" "$(ROOT)/app/src/main/cpp/core.c" \
 		-o "$(ROOT)/build/host/test_core_sanitize"
 	@"$(ROOT)/build/host/test_core_sanitize"
+
+unit-test: local-properties $(GRADLE) ## Run JVM/Kotlin unit tests
+	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:testDebugUnitTest
 
 $(GRADLE):
 	@"$(ROOT)/scripts/generate-wrapper.sh"
@@ -114,11 +118,14 @@ uninstall: require-device ## Remove the app from the device
 	@"$(ENV_RUN)" adb uninstall $(APP_ID)
 
 clean: ## Remove build outputs (keeps caches and the wrapper)
-	@rm -rf "$(ROOT)/build" "$(ROOT)/app/build" "$(ROOT)/app/.cxx"
+	@rm -rf "$(ROOT)/build" "$(ROOT)/app/build" "$(ROOT)/app/bin" "$(ROOT)/app/.cxx"
 	@echo "cleaned build outputs"
 
 distclean: clean ## Also remove caches, local.properties, IDE files and dist/
-	@rm -rf "$(ROOT)/.gradle" "$(ROOT)/.idea" "$(ROOT)/local.properties" "$(ROOT)/dist"
+	@rm -rf "$(ROOT)/.gradle" "$(ROOT)/.idea" "$(ROOT)/local.properties" "$(ROOT)/dist" \
+		"$(ROOT)/.classpath" "$(ROOT)/.project" "$(ROOT)/.settings" \
+		"$(ROOT)/app/.classpath" "$(ROOT)/app/.project" "$(ROOT)/app/.settings" \
+		"$(ROOT)/app/factorypath"
 	@find "$(ROOT)" -name '*.iml' -delete
 	@echo "removed caches and local configuration"
 
@@ -128,7 +135,7 @@ dist: ## Create a clean source archive for sharing (dist/*.tar.gz)
 lint: local-properties $(GRADLE) ## Run Android Lint on the debug variant
 	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:lintDebug
 
-check: test apk ## Host tests + debug APK
+check: test unit-test apk ## Host + JVM tests and debug APK
 	@echo "check: ok"
 
 all: check ## Alias for check
