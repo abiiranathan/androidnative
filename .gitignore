@@ -7,6 +7,7 @@
 /.externalNativeBuild/
 /captures/
 /out/
+/dist/
 local.properties
 *.iml
 .idea/
@@ -28,9 +29,10 @@ signing.properties
 *.ap_
 *.dex
 *.hprof
+*.tar.gz
+*.tgz
 
-# Local archives, logs and environment files
-androidnative.tar.gz
+# Logs and environment files
 *.log
 .env
 .env.*

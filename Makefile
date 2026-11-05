@@ -19,7 +19,7 @@ GRADLE_OPTS ?= --console=plain
 
 .PHONY: help bootstrap doctor wrapper wrapper-force local-properties \
         test test-sanitize apk apk-raw release install install-raw run run-raw \
-        log devices require-device connected-test uninstall clean distclean \
+        log devices require-device connected-test uninstall clean dist distclean \
         check lint all
 
 help: ## Show this help
@@ -112,10 +112,13 @@ clean: ## Remove build outputs (keeps caches and the wrapper)
 	@rm -rf "$(ROOT)/build" "$(ROOT)/app/build" "$(ROOT)/app/.cxx"
 	@echo "cleaned build outputs"
 
-distclean: clean ## Also remove Gradle caches, local.properties and IDE files
-	@rm -rf "$(ROOT)/.gradle" "$(ROOT)/.idea" "$(ROOT)/local.properties"
+distclean: clean ## Also remove caches, local.properties, IDE files and dist/
+	@rm -rf "$(ROOT)/.gradle" "$(ROOT)/.idea" "$(ROOT)/local.properties" "$(ROOT)/dist"
 	@find "$(ROOT)" -name '*.iml' -delete
 	@echo "removed caches and local configuration"
+
+dist: ## Create a clean source archive for sharing (dist/*.tar.gz)
+	@"$(ROOT)/scripts/package-template.sh"
 
 lint: local-properties $(GRADLE) ## Run Android Lint on the debug variant
 	@"$(ENV_RUN)" "$(GRADLE)" $(GRADLE_OPTS) :app:lintDebug

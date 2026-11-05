@@ -27,6 +27,38 @@ The debug APK is at
 If `./gradlew` already exists, a system Gradle is **not** required. Gradle
 downloads the pinned wrapper distribution on the first build.
 
+> Setting up a brand-new machine? See **[QUICKSTART.md](QUICKSTART.md)** for a
+> complete clean-slate walkthrough, including OS packages and device setup.
+
+## Reusing this project
+
+This repository is a **GitHub template**. Create a new project from it with:
+
+```sh
+gh repo create my-app --template abiiranathan/androidnative --private --clone
+cd my-app
+
+# Rename the app, package, source directories, JNI symbol and labels.
+./scripts/new-project.sh --name "My App" --package com.example.myapp
+
+git add -A
+git commit -m "Initialize My App from the androidnative template"
+```
+
+`new-project.sh` edits the current checkout in place. It does not touch `.git`,
+so the new project keeps a clean starting point. Review the diff before the
+first commit.
+
+If you prefer an archive instead of GitHub:
+
+```sh
+make dist
+# dist/androidnative-<version>.tar.gz  (+ .sha256)
+```
+
+The archive contains only source and build files: no `.git`, build outputs,
+`local.properties`, APKs or signing material.
+
 ## Layout
 
 | Path | Purpose |
@@ -45,7 +77,9 @@ downloads the pinned wrapper distribution on the first build.
 | `build.sh` | Gradle-free fallback: NDK clang → aapt2 → javac → d8 → zipalign → apksigner. |
 | `scripts/` | `env-run`, `doctor`, wrapper generation, device check, `local.properties`. |
 | `Makefile` | Developer entry points (see `make help`). |
-| `androidnative.tar.gz` | Local original source archive (gitignored); the extracted tree is the maintained project. |
+| `QUICKSTART.md` | Clean-machine walkthrough, from prerequisites to a running app. |
+| `scripts/new-project.sh` | Renames the template for a new app and package. |
+| `scripts/package-template.sh` | Creates a clean, shareable source archive (`make dist`). |
 
 ## Make targets
 
@@ -60,6 +94,7 @@ Run `make help` for the full list.
 | `make apk` | Debug APK via Gradle. |
 | `make apk-raw` | Debug APK without Gradle (offline/no-wrapper fallback). |
 | `make release` | Release APK, signed with the local debug key. |
+| `make dist` | Clean source archive in `dist/`, with SHA-256 checksum. |
 | `make install` | Install the debug APK with `adb install -r`. |
 | `make install-raw` | Install the Gradle-free APK (builds it if missing). |
 | `make run` | Build, install, launch, and wait for the activity. |
@@ -69,7 +104,7 @@ Run `make help` for the full list.
 | `make devices` | List attached devices. |
 | `make uninstall` | Remove the app from the device. |
 | `make clean` | Remove build outputs. |
-| `make distclean` | Also remove `.gradle/`, `local.properties`, IDE files. |
+| `make distclean` | Also remove `.gradle/`, `local.properties`, IDE files, `dist/`. |
 | `make lint` | Android Lint report at `app/build/reports/lint-results-debug.html`. |
 | `make check` | Host tests + debug APK. |
 
