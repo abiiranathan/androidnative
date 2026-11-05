@@ -5,14 +5,13 @@
 
 #include "core.h"
 
-int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
-{
+int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     enum { MAX_NAME_SIZE = 4096, OUTPUT_SIZE = 64 };
     if (size > MAX_NAME_SIZE) {
         return 0;
     }
 
-    char *name = malloc(size + 1);
+    char* name = malloc(size + 1);
     if (name == NULL) {
         return 0;
     }
