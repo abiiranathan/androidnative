@@ -1,3 +1,7 @@
 {
-    "java.import.gradle.enabled": true
+    "java.import.gradle.enabled": true,
+    "java.import.gradle.java.home": "/usr/lib/jvm/java-17-openjdk",
+    "java.server.launchMode": "Standard",
+    "java.jdt.ls.androidSupport.enabled": "on",
+    "java.configuration.updateBuildConfiguration": "automatic"
 }
